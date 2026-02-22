@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Controle EPI - PWA</title>
+    
+    <!-- META PWA COMPLETO -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Controle EPI">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ff0000">
+    <meta name="application-name" content="Controle EPI">
+    <meta name="msapplication-TileColor" content="#ff0000">
+    
+    <!-- ÍCONES SIMPLES (SVG inline - mais leve e sem erros) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ff0000'/%3E%3Ctext x='20' y='70' font-size='70' fill='white'%3E⛑%3C/text%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ff0000'/%3E%3Ctext x='20' y='70' font-size='70' fill='white'%3E⛑%3C/text%3E%3C/svg%3E">
+    
+    <style>
+        /* Seu CSS existente permanece o mesmo */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            color: #000000;
+        }
+
+        body {
+            background: #e6e9ef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0;
+            min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        /* === LOADING OFFLINE === */
+        .offline-ready {
+            display: none;
+        }
+        
+        /* === BARRA DE FERRAMENTAS MELHORADA === */
+        .toolbar {
+            max-width: 900px;
+            width: 100%;
+            background: #ff0000;
+            color: white;
+            padding: 8px 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .toolbar button {
+            background: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #ff0000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s, background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            -webkit-tap-highlight-color: transparent;
+            flex: 1 1 auto;
+            min-width: 90px;
+            justify-content: center;
+        }
+
+        .toolbar button:active {
+            transform: scale(0.95);
+            background: #f0f0f0;
+        }
+
+        .toolbar button.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* === BANNER DE INSTALAÇÃO === */
+        .install-prompt {
+            max-width: 900px;
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-weight: 600;
+            animation: slideDown 0.5s;
+        }
+
+        .install-prompt span {
+            color: white;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .install-prompt button {
+            background: white;
+            color: #4CAF50;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 40px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .form-container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            margin: 8px 0 15px 0;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        /* === PÁGINAS SEPARADAS === */
+        .pagina1, .pagina2 {
+            background: white;
+            padding: 12px 12px 10px 12px;
+        }
+
+        .pagina1 {
+            border-bottom: 2px dashed #ff9999;
+        }
+
+        .cabecalho-ficha {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .titulo-principal {
+            font-weight: 700;
+            color: #0b2b4a;
+            text-align: center;
+            border-bottom: 3px solid #ff0000;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+            width: 100%;
+            letter-spacing: 0.5px;
+            font-size: 24px;
+        }
+
+        .numero-emissao {
+            background: #ff0000;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            align-self: flex-end;
+            margin-top: -8px;
+        }
+
+        .numero-emissao, .badge-folha2, .btn-adicionar, .btn-remover, .camera-acoes button {
+            color: white;
+        }
+
+        .subtitulo-secao {
+            font-weight: 600;
+            color: #103656;
+            background: #ffe6e6;
+            padding: 4px 10px;
+            margin: 8px 0 6px 0;
+            border-left: 8px solid #ff0000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .btn-adicionar {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-adicionar:active {
+            background: #cc0000;
+            transform: scale(0.95);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 6px 10px;
+            margin-bottom: 4px;
+        }
+
+        .campo {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .campo label {
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #000000;
+            margin-bottom: 2px;
+        }
+
+        .campo input {
+            border: none;
+            border-bottom: 1.5px solid #333;
+            padding: 4px 0 3px 0;
+            outline: none;
+            background: transparent;
+            transition: border-color 0.2s;
+        }
+
+        .campo input:focus {
+            border-bottom-color: #ff0000;
+        }
+
+        .tabela-epi {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4px 0 6px 0;
+            border: 1px solid #ff0000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .tabela-epi th {
+            background-color: #ff0000;
+            color: white;
+            font-weight: 600;
+            padding: 6px 3px;
+            text-align: center;
+            border: 1px solid #cc0000;
+        }
+
+        .tabela-epi td {
+            border: 1px solid #ff9999;
+            padding: 3px 2px;
+            vertical-align: middle;
+            text-align: center;
+            background-color: white;
+        }
+
+        .tabela-epi td input {
+            color: #000000;
+        }
+
+        .tabela-epi input {
+            width: 100%;
+            border: none;
+            padding: 4px 2px;
+            text-align: center;
+            background: transparent;
+            border-bottom: 1px dotted #666;
+        }
+
+        .btn-remover {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            transition: transform 0.2s;
+        }
+
+        .btn-remover:active {
+            transform: scale(0.9);
+            background: #b02a37;
+        }
+
+        .declaracao-box {
+            background: #f9fcfd;
+            border: 1px solid #bacfdf;
+            padding: 8px 10px;
+            margin: 8px 0 15px 0;
+            text-align: justify;
+            line-height: 1.3;
+            border-radius: 8px;
+        }
+
+        .declaracao-box p, .declaracao-box strong {
+            color: #000000;
+        }
+
+        /* === ASSINATURAS - NOVO LAYOUT === */
+        .assinaturas-container {
+            margin: 15px 0 10px 0;
+            border-top: 2px dashed #ff9999;
+            padding-top: 15px;
+        }
+
+        .assinaturas-linha {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .assinatura-item-simples {
+            flex: 1 1 200px;
+            text-align: center;
+        }
+
+        .assinatura-item-simples .cargo {
+            font-weight: 600;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            font-size: 13px;
+            color: #333;
+        }
+
+        .assinatura-item-simples .linha {
+            border-bottom: 2px solid #333;
+            width: 100%;
+            height: 30px;
+            margin-top: 5px;
+        }
+
+        .assinatura-rodape {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+            padding-top: 8px;
+            border-top: 1px solid #ccc;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .folha-info {
+            font-weight: 600;
+            color: #ff0000;
+        }
+
+        /* === PÁGINA 2 - ESTILOS === */
+        .evidencia-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            background: #ffe6e6;
+            padding: 8px 10px;
+            border-radius: 10px;
+            font-weight: 700;
+            color: #062134;
+            border: 2px solid #ff0000;
+            margin-bottom: 12px;
+        }
+
+        .evidencia-header span {
+            color: #062134;
+        }
+
+        @media (min-width: 600px) {
+            .evidencia-header {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        .badge-folha2 {
+            background: #ff0000;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 40px;
+            white-space: nowrap;
+        }
+
+        .termo-autorizacao {
+            background: #fff1f1;
+            border: 2px solid #ff0000;
+            border-left: 8px solid #ff0000;
+            padding: 8px 10px;
+            margin: 8px 0 12px 0;
+            line-height: 1.3;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .termo-autorizacao p, .termo-autorizacao strong, .termo-titulo {
+            color: #000000;
+        }
+
+        .termo-titulo {
+            font-weight: 700;
+            color: #ff0000;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .fotos-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .foto-card {
+            width: 100%;
+            aspect-ratio: 1/1;
+            border: 3px solid #ff0000;
+            border-radius: 12px;
+            background: #f5f5f5;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .foto-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            cursor: pointer;
+        }
+
+        /* === CÂMERA - OTIMIZADA === */
+        .camera-container {
+            width: 100%;
+            margin: 8px 0;
+            background: #1a1a1a;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 3px solid #ff0000;
+            transition: opacity 0.3s;
+        }
+
+        .camera-container.hidden {
+            display: none;
+        }
+
+        .camera-acoes {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+            background: #ffe6e6;
+            padding: 8px 10px;
+            border-radius: 50px;
+            justify-content: center;
+            position: sticky;
+            top: 70px;
+            z-index: 90;
+        }
+
+        .camera-acoes button {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1 1 auto;
+            min-width: 90px;
+            transition: transform 0.2s, opacity 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .camera-acoes button:active {
+            transform: scale(0.95);
+        }
+
+        .camera-acoes button:disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        #video {
+            width: 100%;
+            max-height: 45vh;
+            background: #000;
+            object-fit: cover;
+        }
+
+        #video.hidden {
+            display: none;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .mobile-hint {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 8px;
+            border-radius: 10px;
+            margin: 6px 0;
+            text-align: center;
+            transition: opacity 0.3s;
+        }
+
+        .mobile-hint.hidden {
+            display: none;
+        }
+
+        .folha2-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+            border-top: 2px dashed #ff0000;
+            padding-top: 8px;
+        }
+
+        .folha2-footer span {
+            color: #000000;
+        }
+
+        @media (min-width: 600px) {
+            .folha2-footer {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        .print-hint {
+            text-align: center;
+            color: #505a66;
+            background: #e2e8f0;
+            padding: 6px 10px;
+            border-radius: 30px;
+            margin: 6px 0;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        /* === TOAST NOTIFICATION === */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            z-index: 1000;
+            animation: fadeInOut 3s;
+            white-space: nowrap;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, 20px); }
+            15% { opacity: 1; transform: translate(-50%, 0); }
+            85% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -20px); }
+        }
+
+        /* === IMPRESSÃO - MANTÉM CORES === */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 1.5cm 1cm;
+            }
+            
+            body { 
+                background: white; 
+                padding: 0; 
+                margin: 0; 
+            }
+            
+            .toolbar, .print-hint, .camera-acoes, #video, #canvas, 
+            .btn-adicionar, .btn-remover, .mobile-hint, .install-prompt,
+            .toast { 
+                display: none !important; 
+            }
+            
+            .form-container { 
+                box-shadow: none; 
+                margin: 0; 
+                border-radius: 0; 
+                max-width: 100%;
+            }
+            
+            .pagina1 { 
+                page-break-after: always; 
+                break-after: page; 
+            }
+            
+            .pagina2 { 
+                page-break-before: always; 
+                break-before: page; 
+            }
+            
+            .titulo-principal {
+                color: #0b2b4a;
+                border-bottom: 3px solid #ff0000;
+            }
+            
+            .subtitulo-secao {
+                background: #ffe6e6;
+                border-left: 8px solid #ff0000;
+            }
+            
+            .tabela-epi {
+                border: 1px solid #ff0000;
+            }
+            
+            .tabela-epi th {
+                background-color: #ff0000;
+                color: white;
+                border: 1px solid #cc0000;
+            }
+            
+            .tabela-epi td {
+                border: 1px solid #ff9999;
+            }
+            
+            .badge-folha2, .numero-emissao { 
+                background: #ff0000; 
+                color: white; 
+                border: none; 
+            }
+            
+            .foto-card { 
+                border: 3px solid #ff0000; 
+            }
+            
+            .evidencia-header {
+                background: #ffe6e6;
+                border: 2px solid #ff0000;
+            }
+            
+            .termo-autorizacao {
+                background: #fff1f1;
+                border: 2px solid #ff0000;
+                border-left: 8px solid #ff0000;
+            }
+            
+            .assinaturas-container {
+                border-top: 2px dashed #999;
+            }
+            
+            .assinatura-item-simples .linha {
+                border-bottom: 2px solid #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="installContainer"></div>
+
+    <div class="toolbar">
+        <button onclick="window.acoes.visualizarImpressao()" id="btnImprimir"><span>🖨️</span> Imprimir</button>
+        <button onclick="window.acoes.gerarPDF()" id="btnPDF"><span>📄</span> PDF</button>
+        <button onclick="window.acoes.limparTudo()" id="btnLimpar"><span>🧹</span> Limpar</button>
+        <button onclick="window.acoes.salvarRascunho()" id="btnSalvar"><span>💾</span> Salvar</button>
+    </div>
+
+    <div class="form-container" id="formularioEPI">
+        <!-- PÁGINA 1 -->
+        <div class="pagina1" id="pagina1">
+            <div class="cabecalho-ficha">
+                <div class="titulo-principal">FICHA DE CONTROLE DE EPI</div>
+                <div class="numero-emissao" id="numeroEmissao">Nº ---/----</div>
+            </div>
+
+            <div class="subtitulo-secao">1. DADOS DO COLABORADOR</div>
+            <div class="info-grid">
+                <div class="campo"><label>NOME COMPLETO</label><input type="text" id="nomeColab" placeholder="Digite o nome"></div>
+                <div class="campo"><label>FUNÇÃO</label><input type="text" id="funcaoColab" placeholder="Função"></div>
+                <div class="campo"><label>EQUIPE</label><input type="text" id="equipeColab" placeholder="Equipe"></div>
+                <div class="campo"><label>MATRÍCULA</label><input type="text" id="matriculaColab" placeholder="Nº matrícula"></div>
+                <div class="campo"><label>ÁREA DE ATUAÇÃO</label><input type="text" id="areaColab" placeholder="Área de atuação"></div>
+                <div class="campo"><label>DATA DA ENTREGA</label><input type="date" id="dataEntregaGeral" value="2026-02-20"></div>
+            </div>
+
+            <div class="subtitulo-secao">
+                2. ITENS DE EPI ENTREGUES
+                <button class="btn-adicionar" onclick="window.acoes.adicionarItemEPI()">+ Adicionar EPI</button>
+            </div>
+            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                <table class="tabela-epi" id="tabelaEPI">
+                    <thead>
+                        <tr><th>Nº ATIVO</th><th>QTD</th><th>DATA</th><th>DESCRIÇÃO TÉCNICA</th><th>CA</th><th></th></tr>
+                    </thead>
+                    <tbody id="epiTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="subtitulo-secao">3. DECLARAÇÃO DE RESPONSABILIDADE - NR-06</div>
+            <div class="declaracao-box">
+                <p>Eu, <strong id="declNome">[NOME]</strong>, matrícula <strong id="declMatr">[MATRÍCULA]</strong>, na função de <strong id="declFuncao">[FUNÇÃO]</strong>, declaro para os devidos fins que recebi os Equipamentos de Proteção Individual (EPIs) relacionados acima, em perfeito estado de conservação.</p>
+                <p>Comprometo-me expressamente a:</p>
+                <p>✓ Utilizar os EPIs fornecidos durante toda a jornada de trabalho;<br>
+                ✓ Zelar pela guarda, conservação e higienização dos equipamentos;<br>
+                ✓ Comunicar imediatamente qualquer dano ou extravio;<br>
+                ✓ Devolver os equipamentos quando solicitado ou por ocasião do desligamento;<br>
+                ✓ Substituir, às minhas expensas, qualquer EPI danificado por uso inadequado;<br>
+                ✓ Cumprir as determinações do PCMSO e PPRA da empresa.</p>
+                <p>Declaro que recebi treinamento adequado sobre o uso correto dos EPIs, conforme NR-06.</p>
+            </div>
+
+            <!-- NOVA ESTRUTURA DE ASSINATURAS - SEPARADA E ACIMA DO RODAPÉ -->
+            <div class="assinaturas-container">
+                <div class="assinaturas-linha">
+                    <div class="assinatura-item-simples">
+                        <div class="cargo">COLABORADOR</div>
+                        <div class="linha"></div>
+                    </div>
+                    <div class="assinatura-item-simples">
+                        <div class="cargo">RESPONSÁVEL SST</div>
+                        <div class="linha"></div>
+                    </div>
+                </div>
+                
+                <div class="assinatura-rodape">
+                    <span>Data: <span id="dataAssinatura">____/____/________</span></span>
+                    <span class="folha-info">FOLHA 1/2 - Emissão: <span id="emissaoRodape">---</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PÁGINA 2 -->
+        <div class="pagina2" id="pagina2">
+            <div class="evidencia-header">
+                <span>📷 EVIDÊNCIA FOTOGRÁFICA - FOLHA 2/2</span>
+                <span class="badge-folha2">FOTOS 8x8 - Nº <span id="emissaoBadge">---</span></span>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 8px 0; background:#ffe6e6; padding:6px 10px; border-radius: 15px;">
+                <span><strong>COLABORADOR:</strong> <span id="fotoNomeColab">_________________</span></span>
+                <span><strong>MATRÍCULA:</strong> <span id="fotoMatricula">_________</span></span>
+                <span><strong>DATA:</strong> <span id="fotoData">__/__/____</span></span>
+            </div>
+
+            <div class="termo-autorizacao">
+                <div class="termo-titulo">TERMO DE AUTORIZAÇÃO DE USO DE IMAGEM</div>
+                <p>Autorizo expressamente a <strong>CONSTRUTORA ÓTIMA</strong> a utilizar minha imagem capturada durante o procedimento de entrega de EPIs, exclusivamente para fins de comprovação documental, auditorias e conformidade com a legislação de segurança do trabalho.</p>
+            </div>
+
+            <div class="mobile-hint" id="mobileHint">
+                📱 Toque em "Abrir câmera" e permita o acesso
+            </div>
+
+            <div class="camera-acoes">
+                <button onclick="window.camera.abrir()" id="btnAbrirCamera">📸 Abrir câmera</button>
+                <button onclick="window.camera.capturar()" id="btnCapturar">📌 Capturar</button>
+                <button onclick="window.camera.fechar()" id="btnFecharCamera">⏹️ Fechar</button>
+            </div>
+            
+            <div class="camera-container" id="cameraContainer">
+                <video id="video" autoplay playsinline></video>
+            </div>
+            <canvas id="canvas"></canvas>
+
+            <div class="fotos-grid" id="fotosGrid">
+                <div class="foto-card" id="fotoSlot1"></div>
+                <div class="foto-card" id="fotoSlot2"></div>
+                <div class="foto-card" id="fotoSlot3"></div>
+                <div class="foto-card" id="fotoSlot4"></div>
+            </div>
+            <small style="color: #ff0000; display: block; text-align: center; margin: 6px 0;">👆 Toque na foto para removê-la</small>
+
+            <div class="folha2-footer">
+                <span>Assinatura do colaborador: ___________________________</span>
+                <span>Responsável: ___________________________</span>
+            </div>
+            <div style="text-align: right; margin-top: 6px;">FOLHA 2/2 – Emissão: <span id="emissaoRodape2">---</span></div>
+        </div>
+    </div>
+
+    <div class="print-hint">
+        ⚙ PWA instalável | Disponível offline | Dados salvos automaticamente
+    </div>
+
+    <script>
+        // ==================== DECLARAÇÕES ANTECIPADAS ====================
+        // Definir objetos vazios primeiro para evitar erros de referência
+        window.acoes = {};
+        window.camera = {};
+        window.estado = {};
+
+        // ==================== SERVICE WORKER SIMPLIFICADO ====================
+        (function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js', { scope: './' })
+                        .then(reg => console.log('ServiceWorker registrado'))
+                        .catch(err => {
+                            console.log('ServiceWorker falhou:', err);
+                            // Criar service worker inline como fallback
+                            const swScript = `
+                                self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+                                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                                self.addEventListener('fetch', e => {
+                                    e.respondWith(
+                                        caches.open('epi-cache-v1').then(cache => 
+                                            cache.match(e.request).then(response => 
+                                                response || fetch(e.request)
+                                            )
+                                        )
+                                    );
+                                });
+                            `;
+                            const blob = new Blob([swScript], { type: 'application/javascript' });
+                            navigator.serviceWorker.register(URL.createObjectURL(blob));
+                        });
+                });
+            }
+        })();
+
+        // ==================== MÓDULO DE ESTADO ====================
+        window.estado = {
+            numeroEmissao: null,
+            epiCount: 0,
+            currentSlot: 0,
+            stream: null,
+            fotoSlots: [],
+            toastTimer: null,
+            
+            gerarNumeroEmissao() {
+                const data = new Date();
+                const ano = data.getFullYear();
+                const dia = data.getDate().toString().padStart(2, '0');
+                const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+                const horas = data.getHours().toString().padStart(2, '0');
+                const minutos = data.getMinutes().toString().padStart(2, '0');
+                return `${dia}${mes}${horas}${minutos}/${ano}`;
+            },
+            
+            mostrarToast(mensagem, duracao = 3000) {
+                if (this.toastTimer) clearTimeout(this.toastTimer);
+                const existing = document.querySelector('.toast');
+                if (existing) existing.remove();
+                
+                const toast = document.createElement('div');
+                toast.className = 'toast';
+                toast.textContent = mensagem;
+                document.body.appendChild(toast);
+                
+                this.toastTimer = setTimeout(() => toast.remove(), duracao);
+            },
+            
+            carregarRascunho() {
+                try {
+                    const saved = localStorage.getItem('epi_rascunho');
+                    if (saved) {
+                        const dados = JSON.parse(saved);
+                        Object.keys(dados).forEach(id => {
+                            const input = document.getElementById(id);
+                            if (input) input.value = dados[id];
+                        });
+                        this.mostrarToast('📂 Rascunho carregado');
+                    }
+                } catch (e) {
+                    console.log('Erro ao carregar rascunho');
+                }
+            },
+            
+            salvarRascunho() {
+                const dados = {};
+                document.querySelectorAll('input[id]').forEach(input => {
+                    if (input.type !== 'button' && input.id) {
+                        dados[input.id] = input.value;
+                    }
+                });
+                localStorage.setItem('epi_rascunho', JSON.stringify(dados));
+                this.mostrarToast('✅ Rascunho salvo');
+            }
+        };
+
+        // ==================== INICIALIZAÇÃO ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Gerar numeração
+            window.estado.numeroEmissao = window.estado.gerarNumeroEmissao();
+            document.getElementById('numeroEmissao').innerText = `Nº ${window.estado.numeroEmissao}`;
+            document.getElementById('emissaoRodape').innerText = window.estado.numeroEmissao;
+            document.getElementById('emissaoBadge').innerText = window.estado.numeroEmissao;
+            document.getElementById('emissaoRodape2').innerText = window.estado.numeroEmissao;
+            
+            // Configurar slots de foto
+            for (let i = 1; i <= 4; i++) {
+                window.estado.fotoSlots.push(document.getElementById(`fotoSlot${i}`));
+            }
+            
+            // Adicionar primeira linha de EPI
+            window.acoes.adicionarItemEPI();
+            
+            // Carregar rascunho se existir
+            window.estado.carregarRascunho();
+            
+            // Vincular campos
+            configurarVinculos();
+        });
+
+        // ==================== VÍNCULOS DE CAMPOS ====================
+        function configurarVinculos() {
+            const nome = document.getElementById('nomeColab');
+            const matr = document.getElementById('matriculaColab');
+            const func = document.getElementById('funcaoColab');
+            const data = document.getElementById('dataEntregaGeral');
+            
+            const atualizar = () => {
+                document.getElementById('declNome').innerText = nome.value || '[NOME]';
+                document.getElementById('declMatr').innerText = matr.value || '[MATRÍCULA]';
+                document.getElementById('declFuncao').innerText = func.value || '[FUNÇÃO]';
+                document.getElementById('fotoNomeColab').innerText = nome.value || '_________________';
+                document.getElementById('fotoMatricula').innerText = matr.value || '_________';
+                
+                const dataVal = data.value ? data.value.split('-').reverse().join('/') : '__/__/____';
+                document.getElementById('fotoData').innerText = dataVal;
+                document.getElementById('dataAssinatura').innerText = dataVal;
+            };
+            
+            if (nome) nome.addEventListener('input', atualizar);
+            if (matr) matr.addEventListener('input', atualizar);
+            if (func) func.addEventListener('input', atualizar);
+            if (data) data.addEventListener('change', atualizar);
+            
+            // Chamar uma vez para inicializar
+            atualizar();
+        }
+
+        // ==================== AÇÕES ====================
+        window.acoes = {
+            adicionarItemEPI() {
+                window.estado.epiCount++;
+                const row = document.createElement('tr');
+                row.id = `epi-row-${window.estado.epiCount}`;
+                
+                const dataEntrega = document.getElementById('dataEntregaGeral')?.value || '2026-02-20';
+                
+                row.innerHTML = `
+                    <td><input type="text" placeholder="Nº ativo"></td>
+                    <td><input type="text" placeholder="Qtd"></td>
+                    <td><input type="date" value="${dataEntrega}"></td>
+                    <td><input type="text" placeholder="Descrição técnica"></td>
+                    <td><input type="text" placeholder="CA"></td>
+                    <td><button class="btn-remover" onclick="window.acoes.removerItemEPI('${row.id}')">✖</button></td>
+                `;
+                
+                const tbody = document.getElementById('epiTableBody');
+                if (tbody) tbody.appendChild(row);
+            },
+            
+            removerItemEPI(rowId) {
+                const row = document.getElementById(rowId);
+                if (row && confirm('Remover este item?')) row.remove();
+            },
+            
+            limparTudo() {
+                if (!confirm('Limpar todos os dados?')) return;
+                
+                document.querySelectorAll('input').forEach(inp => {
+                    if (inp.type === 'date') inp.value = '2026-02-20';
+                    else if (inp.type !== 'button') inp.value = '';
+                });
+                
+                const tbody = document.getElementById('epiTableBody');
+                if (tbody) tbody.innerHTML = '';
+                this.adicionarItemEPI();
+                
+                window.estado.fotoSlots.forEach(slot => {
+                    if (slot) slot.innerHTML = '';
+                });
+                window.estado.currentSlot = 0;
+                
+                if (window.camera.fechar) window.camera.fechar();
+                window.estado.mostrarToast('🧹 Todos os dados limpos');
+            },
+            
+            salvarRascunho() {
+                window.estado.salvarRascunho();
+            },
+            
+            visualizarImpressao() {
+                if (window.camera.fechar) window.camera.fechar();
+                setTimeout(() => window.print(), 100);
+            },
+            
+            gerarPDF() {
+                if (window.camera.fechar) window.camera.fechar();
+                const original = document.title;
+                document.title = `EPI_${window.estado.numeroEmissao || 'documento'}`;
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => document.title = original, 500);
+                }, 100);
+                window.estado.mostrarToast('📄 PDF gerado - escolha "Salvar como PDF"');
+            }
+        };
+
+        // ==================== MÓDULO CÂMERA ====================
+        window.camera = {
+            async abrir() {
+                const hint = document.getElementById('mobileHint');
+                const video = document.getElementById('video');
+                const container = document.getElementById('cameraContainer');
+                
+                if (hint) hint.classList.add('hidden');
+                if (container) container.classList.remove('hidden');
+                
+                try {
+                    window.estado.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: { ideal: 'environment' } }
+                    });
+                    
+                    if (video) {
+                        video.srcObject = window.estado.stream;
+                        video.classList.remove('hidden');
+                        await video.play();
+                    }
+                    
+                    const btnCapturar = document.getElementById('btnCapturar');
+                    const btnFechar = document.getElementById('btnFecharCamera');
+                    
+                    if (btnCapturar) btnCapturar.disabled = false;
+                    if (btnFechar) btnFechar.disabled = false;
+                    
+                } catch (err) {
+                    window.estado.mostrarToast('❌ Erro ao acessar câmera');
+                    if (hint) hint.classList.remove('hidden');
+                }
+            },
+            
+            capturar() {
+                if (!window.estado.stream) {
+                    window.estado.mostrarToast('📸 Abra a câmera primeiro');
+                    return;
+                }
+                
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('canvas');
+                
+                if (!video || !canvas) return;
+                
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/jpeg', 0.9);
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.onclick = () => {
+                    if (confirm('Remover foto?')) img.remove();
+                };
+                
+                const slot = window.estado.fotoSlots[window.estado.currentSlot];
+                if (slot) {
+                    slot.innerHTML = '';
+                    slot.appendChild(img);
+                }
+                
+                window.estado.currentSlot = (window.estado.currentSlot + 1) % 4;
+                window.estado.mostrarToast('📸 Foto capturada');
+            },
+            
+            fechar() {
+                if (window.estado.stream) {
+                    window.estado.stream.getTracks().forEach(track => track.stop());
+                    window.estado.stream = null;
+                }
+                
+                const video = document.getElementById('video');
+                if (video) {
+                    video.srcObject = null;
+                    video.classList.add('hidden');
+                }
+                
+                const container = document.getElementById('cameraContainer');
+                if (container) container.classList.add('hidden');
+                
+                const hint = document.getElementById('mobileHint');
+                if (hint) hint.classList.remove('hidden');
+                
+                const btnCapturar = document.getElementById('btnCapturar');
+                const btnFechar = document.getElementById('btnFecharCamera');
+                
+                if (btnCapturar) btnCapturar.disabled = true;
+                if (btnFechar) btnFechar.disabled = true;
+            }
+        };
+
+        // ==================== PWA INSTALÁVEL ====================
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            const container = document.getElementById('installContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="install-prompt">
+                        <span>📲 Instalar app na tela inicial</span>
+                        <button onclick="window.installPWA()">Instalar</button>
+                    </div>
+                `;
+            }
+        });
+
+        window.installPWA = function() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    const container = document.getElementById('installContainer');
+                    if (container) container.innerHTML = '';
+                });
+            }
+        };
+
+        // ==================== AUTO-SAVE ====================
+        setInterval(() => {
+            if (window.estado && window.estado.salvarRascunho) {
+                window.estado.salvarRascunho();
+            }
+        }, 30000); // Auto-save a cada 30s
+    </script>
+</body>
+</html>
